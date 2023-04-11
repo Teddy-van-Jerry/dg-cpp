@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# macOS
+.DS_Store
+
+# This Project
+build
+.cache
+docs/_static
