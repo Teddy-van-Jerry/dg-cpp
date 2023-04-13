@@ -13,3 +13,6 @@ cd ..
 
 # Run Doxygen
 cd dg-cpp && doxygen ./docs/Doxyfile
+
+# Copy Favicon
+cp docs/favicon.ico docs/_static/html/favicon.ico

@@ -39,3 +39,5 @@ build
 .cache
 docs/_static
 bin
+docs/dg-cpp_src.svg
+docs/dg-cpp.png
