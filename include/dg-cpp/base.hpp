@@ -1,9 +1,9 @@
 #ifndef _DG_BASE_HPP_
 #define _DG_BASE_HPP_
 
-#include "dg-cpp/common.hpp"
-#include "dg-cpp/edge.hpp"
-#include "dg-cpp/except.hpp"
+#include "common.hpp"
+#include "edge.hpp"
+#include "except.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -17,7 +17,7 @@
  * @endcode
  */
 namespace dg {
-template <typename EdgeT = void, typename IDT = std::string>
+template <typename EdgeT = void, IDVT IDT = std::string>
 class DGraphBase {
   protected:
     using _ET = Edge<EdgeT>;        /**< edge type */
@@ -40,34 +40,51 @@ class DGraphBase {
     EdgeT& edge(IDT from_id, IDT to_id)
         requires EdgeVT<EdgeT>;
 
+    std::vector<IDT> nodesID() const;
+
+    void insertNode(IDT id_);
+
+  protected:
+    void insertNode(IDT id_, const _CN& cn, bool node_exists = false);
+
+  public:
+    void insertNode(IDT id_, const std::map<IDT, EdgeT>& map, bool node_exists = false)
+        requires EdgeVT<EdgeT>;
+
+    EdgeT operator()(IDT from_id, IDT to_id) const
+        requires EdgeVT<EdgeT>;
+
+    EdgeT& operator()(IDT from_id, IDT to_id)
+        requires EdgeVT<EdgeT>;
+
   private:
     std::map<IDT, _CN> g; /**< the main graph */
 };
 
-template <typename EdgeT, typename IDT>
+template <typename EdgeT, IDVT IDT>
 inline bool DGraphBase<EdgeT, IDT>::hasNode(IDT id_) const {
     return g.contains(id_);
 }
 
-template <typename EdgeT, typename IDT>
+template <typename EdgeT, IDVT IDT>
 inline bool DGraphBase<EdgeT, IDT>::hasEdge(IDT from_id, IDT to_id) const {
     auto&& from_n = g.find(from_id);
     return from_n != g.end() && from_n->second.contains(to_id);
 }
 
-template <typename EdgeT, typename IDT>
+template <typename EdgeT, IDVT IDT>
 inline size_t DGraphBase<EdgeT, IDT>::numNodes() const {
     return g.size();
 }
 
-template <typename EdgeT, typename IDT>
+template <typename EdgeT, IDVT IDT>
 inline size_t DGraphBase<EdgeT, IDT>::numEdges() const {
     size_t s = 0;
-    for (auto&& cn : g) s += cn.first.size();
+    for (auto&& cn : g) s += cn.second.size();
     return s;
 }
 
-template <typename EdgeT, typename IDT>
+template <typename EdgeT, IDVT IDT>
 EdgeT DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id) const
     requires EdgeVT<EdgeT> {
     auto&& from_n = g.find(from_id);
@@ -79,7 +96,7 @@ EdgeT DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id) const
     return to_n->second;
 }
 
-template <typename EdgeT, typename IDT>
+template <typename EdgeT, IDVT IDT>
 EdgeT& DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id)
     requires EdgeVT<EdgeT> {
     auto&& from_n = g.find(from_id);
@@ -89,6 +106,46 @@ EdgeT& DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id)
     if (to_n == from_n->second.end()) [[unlikely]]
         throw node_not_exists("to_id does not exist in method 'edge'");
     return to_n->second;
+}
+
+template <typename EdgeT, IDVT IDT>
+std::vector<IDT> DGraphBase<EdgeT, IDT>::nodesID() const {
+    std::vector<IDT> keys;
+    std::transform(g.begin(), g.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
+    return keys;
+}
+
+template <typename EdgeT, IDVT IDT>
+void DGraphBase<EdgeT, IDT>::insertNode(IDT id_) {
+    g[id_] = _CN();
+}
+
+template <typename EdgeT, IDVT IDT>
+void DGraphBase<EdgeT, IDT>::insertNode(IDT id_, const _CN& cn, bool node_exists) {
+    g[id_] = cn;
+    if (!node_exists) {
+        // update graph nodes
+        for (auto&& n : cn)
+            if (auto&& key = n.first; !g.contains(key)) g[key] = _CN();
+    }
+}
+
+template <typename EdgeT, IDVT IDT>
+void DGraphBase<EdgeT, IDT>::insertNode(IDT id_, const std::map<IDT, EdgeT>& map, bool node_exists)
+    requires EdgeVT<EdgeT> {
+    insertNode(id_, _protected::mapAsEdgeMap(map));
+}
+
+template <typename EdgeT, IDVT IDT>
+inline EdgeT DGraphBase<EdgeT, IDT>::operator()(IDT from_id, IDT to_id) const
+    requires EdgeVT<EdgeT> {
+    return edge(from_id, to_id);
+}
+
+template <typename EdgeT, IDVT IDT>
+inline EdgeT& DGraphBase<EdgeT, IDT>::operator()(IDT from_id, IDT to_id)
+    requires EdgeVT<EdgeT> {
+    return edge(from_id, to_id);
 }
 
 } // namespace dg
