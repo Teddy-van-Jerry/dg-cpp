@@ -18,3 +18,4 @@ Cpp11BracedListStyle: false
 IndentPPDirectives: AfterHash
 SpacesInLineCommentPrefix:
   Minimum: 1
+RequiresClausePosition: WithFollowing

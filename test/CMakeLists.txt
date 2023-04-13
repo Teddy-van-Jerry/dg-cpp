@@ -1,8 +1,8 @@
 project(dg-cpp-test)
 
-add_executable(dg_cpp_test test.cpp)
+add_executable(dg-cpp-test test.cpp)
 
 include(CTest)
 enable_testing()
 
-add_test(NAME test COMMAND dg_cpp_test)
+add_test(NAME test COMMAND dg-cpp-test)

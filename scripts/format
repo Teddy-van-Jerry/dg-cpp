@@ -1,6 +1,7 @@
 #!/bin/sh
 
 clang-format -i include/dg-cpp/*.hpp
+clang-format -i include/dg.hpp
 clang-format -i test/*.cpp
 
 echo "Finished formatting dg-cpp!"
