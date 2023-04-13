@@ -13,6 +13,8 @@ struct Edge {
     EdgeT data;                                   /**< edge data */
     static inline constexpr bool HAS_DATA = true; /**< Indicating there is data member. */
 
+    Edge() = default;
+    
     Edge(const EdgeT& data_);
 
     operator EdgeT&();
@@ -22,7 +24,7 @@ struct Edge {
 
 template <>
 struct Edge<void> {
-    const void* const data                = nullptr; /**< no data actually */
+    const void* data                      = nullptr; /**< no data actually */
     static inline constexpr bool HAS_DATA = false;   /**< Indicating there is no data member. */
 
     Edge() = default;

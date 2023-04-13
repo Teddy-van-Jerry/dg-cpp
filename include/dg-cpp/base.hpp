@@ -22,6 +22,12 @@ class DGraphBase {
   protected:
     using _ET = Edge<EdgeT>;        /**< edge type */
     using _CN = std::map<IDT, _ET>; /**< connection */
+    template <typename T = EdgeT>
+    using EdgeT_R_ = typename std::conditional<std::is_void_v<T>, int, T>::type&;
+    template <typename T = EdgeT>
+    using EdgeT_CR_ = const typename std::conditional<std::is_void_v<T>, int, T>::type&;
+    using EdgeT_R   = EdgeT_R_<>;
+    using EdgeT_CR  = EdgeT_CR_<>;
 
   public:
     DGraphBase() = default;
@@ -37,16 +43,12 @@ class DGraphBase {
     EdgeT edge(IDT from_id, IDT to_id) const
         requires EdgeVT<EdgeT>;
 
-    EdgeT& edge(IDT from_id, IDT to_id)
+    EdgeT_R edge(IDT from_id, IDT to_id)
         requires EdgeVT<EdgeT>;
 
     std::vector<IDT> nodesID() const;
 
     void insertNode(IDT id);
-
-    void removeNode(IDT id, bool keep_edge = false);
-
-    void removeNodeIfExists(IDT id, bool keep_edge = false);
 
   protected:
     void insertNode(IDT id, const _CN& cn, bool node_exists = false);
@@ -55,10 +57,24 @@ class DGraphBase {
     void insertNode(IDT id, const std::map<IDT, EdgeT>& map, bool node_exists = false)
         requires EdgeVT<EdgeT>;
 
+    void removeNode(IDT id, bool keep_edge = false);
+
+    void removeNodeIfExists(IDT id, bool keep_edge = false);
+
+    void insertEdge(IDT from_id, IDT to_id, bool to_exists = false)
+        requires std::is_void_v<EdgeT>;
+
+    void insertEdge(IDT from_id, IDT to_id, EdgeT_CR data, bool to_exists = false)
+        requires EdgeVT<EdgeT>;
+
+    bool operator==(const DGraphBase<EdgeT, IDT>& dg) const;
+
+    bool operator!=(const DGraphBase<EdgeT, IDT>& dg) const;
+
     EdgeT operator()(IDT from_id, IDT to_id) const
         requires EdgeVT<EdgeT>;
 
-    EdgeT& operator()(IDT from_id, IDT to_id)
+    EdgeT_R operator()(IDT from_id, IDT to_id)
         requires EdgeVT<EdgeT>;
 
   private:
@@ -104,7 +120,7 @@ EdgeT DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id) const
 }
 
 template <typename EdgeT, IDVT IDT>
-EdgeT& DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id)
+typename DGraphBase<EdgeT, IDT>::EdgeT_R DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id)
     requires EdgeVT<EdgeT> {
     auto&& from_n = g.find(from_id);
     if (from_n == g.end()) [[unlikely]]
@@ -140,7 +156,7 @@ void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const _CN& cn, bool node_exists)
 template <typename EdgeT, IDVT IDT>
 void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const std::map<IDT, EdgeT>& map, bool node_exists)
     requires EdgeVT<EdgeT> {
-    insertNode(id, _protected::mapAsEdgeMap(map));
+    insertNode(id, _protected::mapAsEdgeMap(map), node_exists);
 }
 
 template <typename EdgeT, IDVT IDT>
@@ -156,13 +172,38 @@ void DGraphBase<EdgeT, IDT>::removeNodeIfExists(IDT id, bool keep_edge) {
 }
 
 template <typename EdgeT, IDVT IDT>
+void DGraphBase<EdgeT, IDT>::insertEdge(IDT from_id, IDT to_id, bool to_exists)
+    requires std::is_void_v<EdgeT> {
+    g[from_id][to_id] = Edge<void>();
+    if (!to_exists && !g.contains(to_id)) g[to_id] = _CN();
+}
+
+template <typename EdgeT, IDVT IDT>
+void DGraphBase<EdgeT, IDT>::insertEdge(IDT from_id, IDT to_id, typename DGraphBase<EdgeT, IDT>::EdgeT_CR data,
+                                        bool to_exists)
+    requires EdgeVT<EdgeT> {
+    g[from_id][to_id] = data;
+    if (!to_exists && !g.contains(to_id)) g[to_id] = _CN();
+}
+
+template <typename EdgeT, IDVT IDT>
+inline bool DGraphBase<EdgeT, IDT>::operator==(const DGraphBase<EdgeT, IDT>& dg) const {
+    return this->g == dg.g;
+}
+
+template <typename EdgeT, IDVT IDT>
+inline bool DGraphBase<EdgeT, IDT>::operator!=(const DGraphBase<EdgeT, IDT>& dg) const {
+    return this->g != dg.g;
+}
+
+template <typename EdgeT, IDVT IDT>
 inline EdgeT DGraphBase<EdgeT, IDT>::operator()(IDT from_id, IDT to_id) const
     requires EdgeVT<EdgeT> {
     return edge(from_id, to_id);
 }
 
 template <typename EdgeT, IDVT IDT>
-inline EdgeT& DGraphBase<EdgeT, IDT>::operator()(IDT from_id, IDT to_id)
+inline typename DGraphBase<EdgeT, IDT>::EdgeT_R DGraphBase<EdgeT, IDT>::operator()(IDT from_id, IDT to_id)
     requires EdgeVT<EdgeT> {
     return edge(from_id, to_id);
 }

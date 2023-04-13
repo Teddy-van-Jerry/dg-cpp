@@ -16,13 +16,13 @@
 
 namespace dg {
 template <typename T>
-concept IDVT = !std::is_same_v<T, void>
+concept IDVT = !std::is_void_v<T>
 #ifdef __cpp_lib_concepts
                && std::equality_comparable<T>
 #endif
     ;
 template <typename T>
-concept EdgeVT = !std::is_same_v<T, void>;
+concept EdgeVT = !std::is_void_v<T>;
 } // namespace dg
 
 #endif

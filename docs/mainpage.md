@@ -9,7 +9,7 @@
 - Written With Modern C++ (C++20 or Above)
 
 ## Author
-This library is developed by [Wuqiong Zhao](https://wqzhao.org) ([Teddy-van-Jerry](https://github.com/Teddy-van-Jerry)).
+This library is developed by [Wuqiong Zhao](https://wqzhao.org) ([Teddy van Jerry](https://github.com/Teddy-van-Jerry)).
 
 ## License
 This project is distributed under an [MIT License](https://github.com/Teddy-van-Jerry/dg-cpp/blob/master/LICENSE).
