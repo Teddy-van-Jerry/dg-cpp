@@ -33,6 +33,12 @@ int main(int argc, char* argv[]) {
     dgb1.insertNode("root", std::map<std::string, int>({ { "n1", 1 }, { "n2", 2 }, { "empty-node", -1 } }));
     std::cout << dgb1.numNodes() << " " << dgb1.numEdges() << std::endl;
     printVec(dgb1.nodesID());
+    dgb1.removeNode("n2");
+    std::cout << dgb1.numNodes() << " " << dgb1.numEdges() << std::endl;
+    printVec(dgb1.nodesID());
+    dgb1.removeNode("root");
+    std::cout << dgb1.numNodes() << " " << dgb1.numEdges() << std::endl;
+    printVec(dgb1.nodesID());
 
     // ===== DGraph =====
     std::cout << "===== DGraph =====" << std::endl;

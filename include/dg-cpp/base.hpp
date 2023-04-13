@@ -26,7 +26,7 @@ class DGraphBase {
   public:
     DGraphBase() = default;
 
-    bool hasNode(IDT id_) const;
+    bool hasNode(IDT id) const;
 
     bool hasEdge(IDT from_id, IDT to_id) const;
 
@@ -42,13 +42,17 @@ class DGraphBase {
 
     std::vector<IDT> nodesID() const;
 
-    void insertNode(IDT id_);
+    void insertNode(IDT id);
+
+    void removeNode(IDT id, bool keep_edge = false);
+
+    void removeNodeIfExists(IDT id, bool keep_edge = false);
 
   protected:
-    void insertNode(IDT id_, const _CN& cn, bool node_exists = false);
+    void insertNode(IDT id, const _CN& cn, bool node_exists = false);
 
   public:
-    void insertNode(IDT id_, const std::map<IDT, EdgeT>& map, bool node_exists = false)
+    void insertNode(IDT id, const std::map<IDT, EdgeT>& map, bool node_exists = false)
         requires EdgeVT<EdgeT>;
 
     EdgeT operator()(IDT from_id, IDT to_id) const
@@ -58,12 +62,15 @@ class DGraphBase {
         requires EdgeVT<EdgeT>;
 
   private:
+    size_t removeNodeConnectedEdges(IDT id);
+
+  private:
     std::map<IDT, _CN> g; /**< the main graph */
 };
 
 template <typename EdgeT, IDVT IDT>
-inline bool DGraphBase<EdgeT, IDT>::hasNode(IDT id_) const {
-    return g.contains(id_);
+inline bool DGraphBase<EdgeT, IDT>::hasNode(IDT id) const {
+    return g.contains(id);
 }
 
 template <typename EdgeT, IDVT IDT>
@@ -116,13 +123,13 @@ std::vector<IDT> DGraphBase<EdgeT, IDT>::nodesID() const {
 }
 
 template <typename EdgeT, IDVT IDT>
-void DGraphBase<EdgeT, IDT>::insertNode(IDT id_) {
-    g[id_] = _CN();
+void DGraphBase<EdgeT, IDT>::insertNode(IDT id) {
+    g[id] = _CN();
 }
 
 template <typename EdgeT, IDVT IDT>
-void DGraphBase<EdgeT, IDT>::insertNode(IDT id_, const _CN& cn, bool node_exists) {
-    g[id_] = cn;
+void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const _CN& cn, bool node_exists) {
+    g[id] = cn;
     if (!node_exists) {
         // update graph nodes
         for (auto&& n : cn)
@@ -131,9 +138,21 @@ void DGraphBase<EdgeT, IDT>::insertNode(IDT id_, const _CN& cn, bool node_exists
 }
 
 template <typename EdgeT, IDVT IDT>
-void DGraphBase<EdgeT, IDT>::insertNode(IDT id_, const std::map<IDT, EdgeT>& map, bool node_exists)
+void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const std::map<IDT, EdgeT>& map, bool node_exists)
     requires EdgeVT<EdgeT> {
-    insertNode(id_, _protected::mapAsEdgeMap(map));
+    insertNode(id, _protected::mapAsEdgeMap(map));
+}
+
+template <typename EdgeT, IDVT IDT>
+void DGraphBase<EdgeT, IDT>::removeNode(IDT id, bool keep_edge) {
+    if (!g.erase(id)) throw node_not_exists("remove a non-existent node");
+    if (!keep_edge) removeNodeConnectedEdges(id);
+}
+
+template <typename EdgeT, IDVT IDT>
+void DGraphBase<EdgeT, IDT>::removeNodeIfExists(IDT id, bool keep_edge) {
+    g.erase(id);
+    if (!keep_edge) removeNodeConnectedEdges(id);
 }
 
 template <typename EdgeT, IDVT IDT>
@@ -146,6 +165,13 @@ template <typename EdgeT, IDVT IDT>
 inline EdgeT& DGraphBase<EdgeT, IDT>::operator()(IDT from_id, IDT to_id)
     requires EdgeVT<EdgeT> {
     return edge(from_id, to_id);
+}
+
+template <typename EdgeT, IDVT IDT>
+size_t DGraphBase<EdgeT, IDT>::removeNodeConnectedEdges(IDT id) {
+    size_t s = 0;
+    for (auto&& cn : g) s += cn.second.erase(id);
+    return s;
 }
 
 } // namespace dg
