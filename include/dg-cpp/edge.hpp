@@ -14,7 +14,7 @@ struct Edge {
     static inline constexpr bool HAS_DATA = true; /**< Indicating there is data member. */
 
     Edge() = default;
-    
+
     Edge(const EdgeT& data_);
 
     operator EdgeT&();

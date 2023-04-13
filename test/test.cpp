@@ -38,6 +38,7 @@ int main(int argc, char* argv[]) {
     printVec(dgb1.nodesID());
     dgb1.removeNode("root");
     std::cout << dgb1.numNodes() << " " << dgb1.numEdges() << std::endl;
+    std::cout << dgb1.isConnected("root", "empty-node") << std::endl;
     printVec(dgb1.nodesID());
     dgb1.insertEdge("n1", "n2", 12);
     std::cout << dgb1.numNodes() << " " << dgb1.numEdges() << std::endl;
@@ -46,6 +47,7 @@ int main(int argc, char* argv[]) {
     DGraphBase dgb2;
     dgb2.insertEdge("n1", "n2");
     std::cout << dgb2.numNodes() << " " << dgb2.numEdges() << std::endl;
+    std::cout << dgb2.isConnected("n1", "n2") << std::endl;
 
     // ===== DGraph =====
     std::cout << "===== DGraph =====" << std::endl;

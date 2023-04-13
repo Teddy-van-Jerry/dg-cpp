@@ -5,7 +5,9 @@
 #include "edge.hpp"
 #include "except.hpp"
 #include <map>
+#include <stack>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 /**
@@ -66,6 +68,8 @@ class DGraphBase {
 
     void insertEdge(IDT from_id, IDT to_id, EdgeT_CR data, bool to_exists = false)
         requires EdgeVT<EdgeT>;
+
+    bool isConnected(IDT from_id, IDT to_id) const;
 
     bool operator==(const DGraphBase<EdgeT, IDT>& dg) const;
 
@@ -184,6 +188,30 @@ void DGraphBase<EdgeT, IDT>::insertEdge(IDT from_id, IDT to_id, typename DGraphB
     requires EdgeVT<EdgeT> {
     g[from_id][to_id] = data;
     if (!to_exists && !g.contains(to_id)) g[to_id] = _CN();
+}
+
+template <typename EdgeT, IDVT IDT>
+inline bool DGraphBase<EdgeT, IDT>::isConnected(IDT from_id, IDT to_id) const {
+    // check if nodes exist
+    if (!hasNode(from_id) || !hasNode(to_id)) return false;
+    // use DFS to search for path from 'from_id' to 'to_id'
+    std::unordered_set<IDT> visited; // set of visited nodes
+    std::stack<IDT> s;               // stack for DFS
+    visited.insert(from_id);
+    s.push(from_id);
+    while (!s.empty()) {
+        IDT node = s.top();
+        s.pop();
+        auto& edges = g.at(node);
+        for (auto& [neighbor, edge] : edges) {
+            if (neighbor == to_id) return true; // found path
+            if (!visited.count(neighbor)) {
+                visited.insert(neighbor);
+                s.push(neighbor);
+            }
+        }
+    }
+    return false; // no path found
 }
 
 template <typename EdgeT, IDVT IDT>
