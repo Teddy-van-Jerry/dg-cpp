@@ -40,13 +40,13 @@ class DGraphBase {
   public:
     DGraphBase() = default;
 
-    bool hasNode(IDT id) const;
+    bool hasNode(IDT id) const noexcept;
 
-    bool hasEdge(IDT from_id, IDT to_id) const;
+    bool hasEdge(IDT from_id, IDT to_id) const noexcept;
 
-    size_t numNodes() const;
+    size_t numNodes() const noexcept;
 
-    size_t numEdges() const;
+    size_t numEdges() const noexcept;
 
     EdgeT edge(IDT from_id, IDT to_id) const
         requires EdgeVT<EdgeT>;
@@ -123,9 +123,19 @@ class DGraphBase {
         requires EdgeVT<EdgeT>;
 
   public:
+    void insertSubGraph(const DGraphBase<EdgeT, IDT>& dg);
+
+    void merge(const DGraphBase<EdgeT, IDT>& dg);
+
+    void clear();
+
+    void clearEdges();
+
     bool operator==(const DGraphBase<EdgeT, IDT>& dg) const;
 
     bool operator!=(const DGraphBase<EdgeT, IDT>& dg) const;
+
+    DGraphBase& operator+=(const DGraphBase<EdgeT, IDT>& dg);
 
     EdgeT operator()(IDT from_id, IDT to_id) const
         requires EdgeVT<EdgeT>;
@@ -141,23 +151,23 @@ class DGraphBase {
 };
 
 template <typename EdgeT, IDVT IDT>
-inline bool DGraphBase<EdgeT, IDT>::hasNode(IDT id) const {
+inline bool DGraphBase<EdgeT, IDT>::hasNode(IDT id) const noexcept {
     return g.contains(id);
 }
 
 template <typename EdgeT, IDVT IDT>
-inline bool DGraphBase<EdgeT, IDT>::hasEdge(IDT from_id, IDT to_id) const {
+inline bool DGraphBase<EdgeT, IDT>::hasEdge(IDT from_id, IDT to_id) const noexcept {
     auto&& from_n = g.find(from_id);
     return from_n != g.end() && from_n->second.contains(to_id);
 }
 
 template <typename EdgeT, IDVT IDT>
-inline size_t DGraphBase<EdgeT, IDT>::numNodes() const {
+inline size_t DGraphBase<EdgeT, IDT>::numNodes() const noexcept {
     return g.size();
 }
 
 template <typename EdgeT, IDVT IDT>
-inline size_t DGraphBase<EdgeT, IDT>::numEdges() const {
+inline size_t DGraphBase<EdgeT, IDT>::numEdges() const noexcept {
     size_t s = 0;
     for (auto&& cn : g) s += cn.second.size();
     return s;
@@ -400,9 +410,32 @@ DGraphBase<EdgeT, IDT>::minOrMaxWeightPath(bool min, IDT from_id, IDT to_id, std
     std::reverse(path.begin(), path.end());
 
     // Check if a path was found
-    if (path.size() < 1) throw std::runtime_error("no path found between nodes");
+    if (path.size() < 1) throw runtime_error("no path found between nodes in method");
 
     return { dist[to_id], path };
+}
+
+template <typename EdgeT, IDVT IDT>
+inline void DGraphBase<EdgeT, IDT>::insertSubGraph(const DGraphBase<EdgeT, IDT>& dg) {
+    merge(dg);
+}
+
+template <typename EdgeT, IDVT IDT>
+inline void DGraphBase<EdgeT, IDT>::merge(const DGraphBase<EdgeT, IDT>& dg) {
+    for (auto&& [id, cn] : dg.g) {
+        if (auto&& i = g.find(id); i == g.end()) g[id] = cn; // not previously existent in *this
+        else i->second.insert(cn.begin(), cn.end()); // the node previously exists, so the connected edges are merged
+    }
+}
+
+template <typename EdgeT, IDVT IDT>
+inline void DGraphBase<EdgeT, IDT>::clear() {
+    g.clear();
+}
+
+template <typename EdgeT, IDVT IDT>
+inline void DGraphBase<EdgeT, IDT>::clearEdges() {
+    for (auto&& cn : g) cn.second.clear();
 }
 
 template <typename EdgeT, IDVT IDT>
@@ -413,6 +446,12 @@ inline bool DGraphBase<EdgeT, IDT>::operator==(const DGraphBase<EdgeT, IDT>& dg)
 template <typename EdgeT, IDVT IDT>
 inline bool DGraphBase<EdgeT, IDT>::operator!=(const DGraphBase<EdgeT, IDT>& dg) const {
     return this->g != dg.g;
+}
+
+template <typename EdgeT, IDVT IDT>
+inline DGraphBase<EdgeT, IDT>& DGraphBase<EdgeT, IDT>::operator+=(const DGraphBase<EdgeT, IDT>& dg) {
+    merge(dg);
+    return *this;
 }
 
 template <typename EdgeT, IDVT IDT>

@@ -67,6 +67,15 @@ int main(int argc, char* argv[]) {
     std::cout << "path: ";
     printVec(n, " -> ");
 
+    std::cout << ">> dgb4:" << std::endl;
+    decltype(dgb1) dgb4;
+    dgb4.insertEdge("A", "B", 1);
+    dgb4.insertEdge("A", "C", 2);
+    dgb4.insertEdge("n1", "A", 2);
+    dgb4.merge(dgb1);
+    std::cout << dgb4.numNodes() << " " << dgb4.numEdges() << std::endl;
+    printVec(dgb4.nodesID());
+
     // ===== DGraph =====
     std::cout << "===== DGraph =====" << std::endl;
     DGraph<double, char> dg1;
