@@ -23,6 +23,8 @@ concept IDVT = !std::is_void_v<T>
     ;
 template <typename T>
 concept EdgeVT = !std::is_void_v<T>;
+template <typename T>
+concept NonFunc = !std::is_function_v<T>;
 } // namespace dg
 
 #endif

@@ -73,9 +73,13 @@
         "iostream": "cpp",
         "__functional_03": "cpp",
         "__functional_base_03": "cpp",
-        "concepts": "cpp"
+        "concepts": "cpp",
+        "deque": "cpp",
+        "stack": "cpp",
+        "unordered_set": "cpp"
     },
     "cSpell.words": [
         "IDVT"
-    ]
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

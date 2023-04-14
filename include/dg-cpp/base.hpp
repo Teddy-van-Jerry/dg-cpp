@@ -4,6 +4,7 @@
 #include "common.hpp"
 #include "edge.hpp"
 #include "except.hpp"
+#include <functional>
 #include <map>
 #include <stack>
 #include <string>
@@ -25,9 +26,12 @@ class DGraphBase {
     using _ET = Edge<EdgeT>;        /**< edge type */
     using _CN = std::map<IDT, _ET>; /**< connection */
     template <typename T = EdgeT>
+    using EdgeT__ = typename std::conditional<std::is_void_v<T>, int, T>::type;
+    template <typename T = EdgeT>
     using EdgeT_R_ = typename std::conditional<std::is_void_v<T>, int, T>::type&;
     template <typename T = EdgeT>
     using EdgeT_CR_ = const typename std::conditional<std::is_void_v<T>, int, T>::type&;
+    using EdgeT_    = EdgeT__<>;
     using EdgeT_R   = EdgeT_R_<>;
     using EdgeT_CR  = EdgeT_CR_<>;
 
@@ -46,6 +50,15 @@ class DGraphBase {
         requires EdgeVT<EdgeT>;
 
     EdgeT_R edge(IDT from_id, IDT to_id)
+        requires EdgeVT<EdgeT>;
+
+    // primarily for lambda expression
+    template <typename Ret, NonFunc Fn, typename... Args>
+    Ret edge(IDT from_id, IDT to_id, Fn func, Args... args) const
+        requires EdgeVT<EdgeT>;
+
+    template <typename Ret, typename... Args>
+    Ret edge(IDT from_id, IDT to_id, std::function<Ret(EdgeT_, Args...)> func, Args... args) const
         requires EdgeVT<EdgeT>;
 
     std::vector<IDT> nodesID() const;
@@ -134,6 +147,40 @@ typename DGraphBase<EdgeT, IDT>::EdgeT_R DGraphBase<EdgeT, IDT>::edge(IDT from_i
         throw node_not_exists("to_id does not exist in method 'edge'");
     return to_n->second;
 }
+
+template <typename EdgeT, IDVT IDT>
+template <typename Ret, NonFunc Fn, typename... Args>
+inline Ret DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id, Fn func, Args... args) const
+    requires EdgeVT<EdgeT> {
+    static_assert(std::is_invocable_r_v<Ret, Fn, DGraphBase<EdgeT, IDT>::EdgeT_, Args...>,
+                  "3rd argument (non std::function) must be invocable in method 'edge'.");
+    return func(edge(from_id, to_id), args...);
+}
+
+template <typename EdgeT, IDVT IDT>
+template <typename Ret, typename... Args>
+inline Ret DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id, std::function<Ret(EdgeT_, Args...)> func,
+                                        Args... args) const
+    requires EdgeVT<EdgeT> {
+    return func(edge(from_id, to_id), args...);
+}
+
+// template <typename EdgeT, IDVT IDT>
+// // template <typename Ret, typename... Args>
+// // inline Ret DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id, std::function<Ret(EdgeT_, Args...)> func,
+// //                                         Args... args) const
+// template <typename Ret, typename Fn, typename... Args>
+// Ret DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id, Fn func, Args... args) const
+//         requires EdgeVT<EdgeT> && std::is_invocable_v<Ret, Fn, DGraphBase<EdgeT, IDT>::EdgeT_, Args...> {
+//     return func(edge(from_id, to_id), args...);
+// }
+
+// template <typename EdgeT, IDVT IDT>
+// template <typename Ret, typename... Args>
+// inline Ret& DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id, std::function<Ret&(Args...)> func, Args... args)
+//     requires EdgeVT<EdgeT> {
+//     return func(edge(from_id, to_id), args...);
+// }
 
 template <typename EdgeT, IDVT IDT>
 std::vector<IDT> DGraphBase<EdgeT, IDT>::nodesID() const {

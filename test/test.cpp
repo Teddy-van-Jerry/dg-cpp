@@ -33,6 +33,13 @@ int main(int argc, char* argv[]) {
     dgb1.insertNode("root", std::map<std::string, int>({ { "n1", 1 }, { "n2", 2 }, { "empty-node", -1 } }));
     std::cout << dgb1.numNodes() << " " << dgb1.numEdges() << std::endl;
     printVec(dgb1.nodesID());
+    std::cout << "(std::function) weight + n: "
+              << dgb1.edge(std::string("root"), std::string("n2"),
+                           std::function<int(int, int)>([](int weight, int n) { return weight + n; }), 2)
+              << std::endl;
+    std::cout << "(lambda expr) weight + 1: " << dgb1.edge<int>(std::string("root"), std::string("n2"), [](int weight) {
+        return weight + 1;
+    }) << std::endl;
     dgb1.removeNode("n2");
     std::cout << dgb1.numNodes() << " " << dgb1.numEdges() << std::endl;
     printVec(dgb1.nodesID());
