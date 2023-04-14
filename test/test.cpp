@@ -2,10 +2,10 @@
 #include <iostream>
 using namespace dg;
 
-void printVec(const auto& v) {
+void printVec(const auto& v, std::string sep = " ") {
     if (v.empty()) std::cout << std::endl;
     else {
-        for (auto i = v.begin(); i + 1 != v.end(); ++i) std::cout << *i << ' ';
+        for (auto i = v.begin(); i + 1 != v.end(); ++i) std::cout << *i << sep;
         std::cout << *(v.end() - 1) << std::endl;
     }
 }
@@ -40,6 +40,7 @@ int main(int argc, char* argv[]) {
     std::cout << "(lambda expr) weight + 1: " << dgb1.edge<int>(std::string("root"), std::string("n2"), [](int weight) {
         return weight + 1;
     }) << std::endl;
+    dgb1.maxWeightPath("n1", "n2");
     dgb1.removeNode("n2");
     std::cout << dgb1.numNodes() << " " << dgb1.numEdges() << std::endl;
     printVec(dgb1.nodesID());
@@ -56,10 +57,34 @@ int main(int argc, char* argv[]) {
     std::cout << dgb2.numNodes() << " " << dgb2.numEdges() << std::endl;
     std::cout << dgb2.isConnected("n1", "n2") << std::endl;
 
+    std::cout << ">> dgb3:" << std::endl;
+    DGraphBase<double> dgb3;
+    dgb3.insertEdge("A", "B", 1.2);
+    dgb3.insertEdge("A", "C", 0.5);
+    dgb3.insertEdge("C", "B", 1.5);
+    auto [w, n] = dgb3.maxWeightPath("A", "B");
+    std::cout << "max weight: " << w << std::endl;
+    std::cout << "path: ";
+    printVec(n, " -> ");
+
     // ===== DGraph =====
     std::cout << "===== DGraph =====" << std::endl;
     DGraph<double, char> dg1;
     std::cout << dg1.hasNode("foo") << " " << dg1.hasEdge("foo", "bar") << std::endl;
+
+    struct DataT {
+        double data = 0;
+        int foo     = 0;
+    };
+    std::cout << ">> dg2:" << std::endl;
+    DGraphBase<DataT> dg2;
+    dg2.insertEdge("A", "B", DataT{ 1.2, 1 });
+    dg2.insertEdge("A", "C", DataT{ 0.5, 1 });
+    dg2.insertEdge("C", "B", DataT{ 1.5, 1 });
+    auto [w2, n2] = dg2.minWeightPath<double>("A", "B", [](DataT x) { return x.data; });
+    std::cout << "min weight: " << w2 << std::endl;
+    std::cout << "path: ";
+    printVec(n2, " -> ");
 
     return 0;
 }
