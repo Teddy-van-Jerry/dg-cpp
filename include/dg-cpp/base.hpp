@@ -193,92 +193,346 @@ class DGraphBase {
     Ret edge(IDT from_id, IDT to_id, std::function<Ret(EdgeT_, Args...)> func, Args... args) const
         requires EdgeVT<EdgeT>;
 
+    /**
+     * @brief Get all nodes IS in the graph.
+     *
+     * @return (std::vector<IDT>) A vector of nodes ID.
+     */
     std::vector<IDT> nodesID() const;
 
-    // get all edges
+    /**
+     * @brief Get all edge connections in the graph.
+     *
+     * @return (std::vector<std::pair<IDT, IDT>>) A vector of edge connections, in `std::pair`.
+     */
     std::vector<std::pair<IDT, IDT>> edges() const;
 
+    /**
+     * @brief Insert a node.
+     *
+     * @details If the node id exists before, its edge connections will be cleared.
+     *          If the node id does not exist, it will be created.
+     * @param id The node id.
+     */
     void insertNode(IDT id);
 
   protected:
-    void insertNode(IDT id, const _CN& cn, bool node_exists = false);
+    /**
+     * @brief Insert a node.
+     *
+     * @param id The node id.
+     * @param cn The edge connections.
+     * @param nodes_exist Whether the node exists before insertion.
+     */
+    void insertNode(IDT id, const _CN& cn, bool nodes_exist = false);
 
   public:
-    void insertNode(IDT id, const std::map<IDT, EdgeT>& map, bool node_exists = false)
+    /**
+     * @brief Insert a node with edge data.
+     *
+     * @details If the node id exists before, its edge connections will be cleared.
+     *          If the node id does not exist, it will be created.\n
+     *          If `nodes_exist` is set to true, the node graph will not be updated.
+     *          Otherwise (the default behavior) the node graph will be updated by checking all connected edges.
+     * @note `nodes_exist` does not mean whether the node with id exists.
+     *       It specifies whether the connected nodes exist.
+     * @note EdgeT should not be void.
+     * @param id The node id.
+     * @param map The edge data map.
+     * @param nodes_exist Whether all nodes in edge connections exist before insertion (default as false).
+     *                    You should be sure when setting this to true. Otherwise there can be unexpected behaviors.
+     */
+    void insertNode(IDT id, const std::map<IDT, EdgeT>& map, bool nodes_exist = false)
         requires EdgeVT<EdgeT>;
 
+    /**
+     * @brief Remove the node from the graph.
+     *
+     * @exception dg::node_not_exists Removes a non-existent node.
+     *            Use removeNodeIfExists() to avoid the exception.
+     * @param id The node id.
+     * @param keep_edge Whether keeps the connected edges after removing the node (default as false).
+     */
     void removeNode(IDT id, bool keep_edge = false);
 
+    /**
+     * @brief Remove the node from the graph if it exists.
+     *
+     * @details Nothing will be done if the node does not exist.
+     * @param id The node id.
+     * @param keep_edge Whether keeps the connected edges after removing the node (default as false).
+     */
     void removeNodeIfExists(IDT id, bool keep_edge = false);
 
+    /**
+     * @brief Insert an edge to the graph without data.
+     *
+     * @param from_id The from node id. If it does not exist, it will be created automatically.
+     * @param to_id The to node id. If it does not exist, it will be created automatically.
+     * @param to_exists Whether the to node exists before insertion.
+     *                  If this is set to true, the from node graph will not be updated.
+     *                  Please be sure before setting this to true.
+     */
     void insertEdge(IDT from_id, IDT to_id, bool to_exists = false)
         requires std::is_void_v<EdgeT>;
 
+    /**
+     * @brief Insert an edge to the graph with data.
+     *
+     * @param from_id The from node id. If it does not exist, it will be created automatically.
+     * @param to_id The to node id. If it does not exist, it will be created automatically.
+     * @param data The edge data.
+     * @param to_exists Whether the to node exists before insertion.
+     *                  If this is set to true, the from node graph will not be updated.
+     *                  Please be sure before setting this to true.
+     */
     void insertEdge(IDT from_id, IDT to_id, EdgeT_CR data, bool to_exists = false)
         requires EdgeVT<EdgeT>;
 
+    /**
+     * @brief Check whether to node are connected.
+     *
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @retval true There exists a path.
+     * @retval false There does not exist a path.
+     */
     bool isConnected(IDT from_id, IDT to_id) const;
 
-    // obtain the maximum weight and its corresponding path from from_id to to_id
+    /**
+     * @brief Obtain the maximum weight and its corresponding path between two nodes.
+     *
+     * @details This finds the maximum weight path with the Djkstra algorithm.
+     *          So all weights should be **non-negative**.\n
+     *          Example use:
+     * @code {.cpp}
+     * DGraphBase<double> dgb3;
+     * dgb3.insertEdge("A", "B", 1.2);
+     * dgb3.insertEdge("A", "C", 0.5);
+     * dgb3.insertEdge("C", "B", 1.5);
+     * auto [w, n] = dgb3.maxWeightPath("A", "B"); // w is weight, n is path
+     * @endcode
+     *
+     * @note EdgeT should be arithmetic, i.e. edge data represents the weight.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @return (std::pair<EdgeT, std::vector<IDT>>) The maximum weight and its corresponding path.
+     */
     std::pair<EdgeT_, std::vector<IDT>> maxWeightPath(IDT from_id, IDT to_id) const
         requires EdgeVT<EdgeT> && std::is_arithmetic_v<EdgeT>;
 
-    // implementation that accepts lambda
+    /**
+     * @brief Obtain the maximum weight and its corresponding path between two nodes.
+     *
+     * @details This finds the maximum weight path with the Djkstra algorithm.
+     *          So all weights should be **non-negative**.\n
+     *          Example use:
+     * @code {.cpp}
+     * struct DataT {
+     *     double data = 0;
+     *     int foo     = 0;
+     * };
+     * DGraphBase<DataT> dgb2;
+     * dgb2.insertEdge("A", "B", DataT{ 1.2, 1 });
+     * dgb2.insertEdge("A", "C", DataT{ 0.5, 1 });
+     * dgb2.insertEdge("C", "B", DataT{ 1.5, 1 });
+     * auto [w, n] = dgb2.maxWeightPath<double>("A", "B", [](DataT x) { return x.data; });
+     * @endcode
+     *
+     * @tparam Ret The weight type, i.e. Lambda function return type.
+     * @tparam Fn The Lambda expression type.
+     * @tparam Args The Lambda expression argument types.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @param func The Lambda expression.
+     * @param args The Lambda expression arguments.
+     * @return (std::pair<Ret, std::vector<IDT>>) The maximum weight and its corresponding path.
+     */
     template <typename Ret, NonFunc Fn, typename... Args>
     std::pair<Ret, std::vector<IDT>> maxWeightPath(IDT from_id, IDT to_id, Fn func, Args... args) const
         requires EdgeVT<EdgeT>;
 
-    // implementation that accepts std::function
+    /**
+     * @brief Obtain the maximum weight and its corresponding path between two nodes.
+     *
+     * @details This finds the maximum weight path with the Djkstra algorithm.
+     *          So all weights should be **non-negative**.
+     * @tparam Ret The weight type, i.e. `std::function` return type.
+     * @tparam Args `std::function` argument types.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @param func The `std::function`.
+     * @param args The `std::function` arguments.
+     * @return (std::pair<Ret, std::vector<IDT>>) The maximum weight and its corresponding path.
+     */
     template <typename Ret, typename... Args>
     std::pair<Ret, std::vector<IDT>> maxWeightPath(IDT from_id, IDT to_id, std::function<Ret(EdgeT_, Args...)> func,
                                                    Args... args) const
         requires EdgeVT<EdgeT>;
 
-    // obtain the minimum weight and its corresponding path from from_id to to_id
+    /**
+     * @brief Obtain the minimum weight and its corresponding path between two nodes.
+     *
+     * @details This finds the minimum weight path with the Djkstra algorithm.
+     *          So all weights should be **non-negative**.\n
+     *          Example see maxWeightPath().
+     * @note EdgeT should be arithmetic, i.e. edge data represents the weight.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @return (std::pair<EdgeT, std::vector<IDT>>) The minimum weight and its corresponding path.
+     */
     std::pair<EdgeT_, std::vector<IDT>> minWeightPath(IDT from_id, IDT to_id) const
         requires EdgeVT<EdgeT> && std::is_arithmetic_v<EdgeT>;
 
-    // implementation that accepts lambda
+    /**
+     * @brief Obtain the minimum weight and its corresponding path between two nodes.
+     *
+     * @details This finds the minimum weight path with the Djkstra algorithm.
+     *          So all weights should be **non-negative**.\n
+     *          Example see maxWeightPath().
+     * @tparam Ret The weight type, i.e. Lambda function return type.
+     * @tparam Fn The Lambda expression type.
+     * @tparam Args The Lambda expression argument types.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @param func The Lambda expression.
+     * @param args The Lambda expression arguments.
+     * @return (std::pair<Ret, std::vector<IDT>>) The maximum weight and its corresponding path.
+     */
     template <typename Ret, NonFunc Fn, typename... Args>
     std::pair<Ret, std::vector<IDT>> minWeightPath(IDT from_id, IDT to_id, Fn func, Args... args) const
         requires EdgeVT<EdgeT>;
 
-    // implementation that accepts std::function
+    /**
+     * @brief Obtain the minimum weight and its corresponding path between two nodes.
+     *
+     * @details This finds the minimum weight path with the Djkstra algorithm.
+     *          So all weights should be **non-negative**.
+     * @tparam Ret The weight type, i.e. `std::function` return type.
+     * @tparam Args `std::function` argument types.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @param func The `std::function`.
+     * @param args The `std::function` arguments.
+     * @return (std::pair<Ret, std::vector<IDT>>) The minimum weight and its corresponding path.
+     */
     template <typename Ret, typename... Args>
     std::pair<Ret, std::vector<IDT>> minWeightPath(IDT from_id, IDT to_id, std::function<Ret(EdgeT_, Args...)> func,
                                                    Args... args) const
         requires EdgeVT<EdgeT>;
 
   private:
+    /**
+     * @brief Obtain the minimum/maximum weight and its corresponding path between two nodes.
+     *
+     * @tparam Ret The weight type, i.e. Lambda function return type.
+     * @tparam Args `std::function` argument types.
+     * @param min Whether to find the minimum or maximum weight.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @param func The `std::function`.
+     * @param args The `std::function` arguments.
+     * @return (std::pair<Ret, std::vector<IDT>>) The minimum/maximum weight and its corresponding path.
+     */
     template <typename Ret, typename... Args>
     std::pair<Ret, std::vector<IDT>> minOrMaxWeightPath(bool min, IDT from_id, IDT to_id,
                                                         std::function<Ret(EdgeT_, Args...)> func, Args... args) const
         requires EdgeVT<EdgeT>;
 
   public:
+    /**
+     * @brief Insert subgraph into the main graph.
+     *
+     * @details This is an alias for merge();
+     * @param dg The subgraph.
+     */
     void insertSubGraph(const DGraphBase<EdgeT, IDT>& dg);
 
+    /**
+     * @brief Insert a subgraph at a node.
+     *
+     * @details This is equivalent to remove a node and insert a subgraph.
+     * @param dg The subgraph.
+     * @param id The node id.
+     */
     void insertSubGraph(const DGraphBase<EdgeT, IDT>& dg, IDT id);
 
+    /**
+     * @brief Merge a graph into the main graph.
+     *
+     * @param dg The graph to be merged.
+     */
     void merge(const DGraphBase<EdgeT, IDT>& dg);
 
+    /**
+     * @brief Clear the whole graph.
+     *
+     * @details Remove all the nodes and the connected edges.
+     */
     void clear();
 
+    /**
+     * @brief Clear all edges of the graph.
+     *
+     */
     void clearEdges();
 
+    /**
+     * @brief Check if two graphs are identical.
+     *
+     * @details All nodes and edges should be the same.
+     * @param dg Another graph.
+     * @retval true The two graphs are identical.
+     * @retval false The two graphs are different.
+     */
     bool operator==(const DGraphBase<EdgeT, IDT>& dg) const;
 
+    /**
+     * @brief Check if two graphs are different.
+     *
+     * @param dg Another graph.
+     * @retval true The two graphs are different.
+     * @retval false The two graphs are identical.
+     */
     bool operator!=(const DGraphBase<EdgeT, IDT>& dg) const;
 
+    /**
+     * @brief Merge two graphs.
+     *
+     * @details This is an alias for merge().
+     * @param dg Another graph.
+     * @return (DGraphBase&) The merged graph (as a reference).
+     */
     DGraphBase& operator+=(const DGraphBase<EdgeT, IDT>& dg);
 
+    /**
+     * @brief Get the edge data between two nodes.
+     *
+     * @note EdgeT should not be void.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @return (EdgeT) The edge data.
+     */
     EdgeT operator()(IDT from_id, IDT to_id) const
         requires EdgeVT<EdgeT>;
 
+    /**
+     * @brief Get the edge data reference between two nodes.
+     *
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @return (EdgeT_R) The edge data reference.
+     */
     EdgeT_R operator()(IDT from_id, IDT to_id)
         requires EdgeVT<EdgeT>;
 
   private:
+    /**
+     * @brief Remove edges connected to a node.
+     *
+     * @param id The node id.
+     * @return (size_t) The number of removed edges.
+     */
     size_t removeNodeConnectedEdges(IDT id);
 
   private:
@@ -371,9 +625,9 @@ void DGraphBase<EdgeT, IDT>::insertNode(IDT id) {
 }
 
 template <typename EdgeT, IDVT IDT>
-void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const _CN& cn, bool node_exists) {
+void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const _CN& cn, bool nodes_exist) {
     g[id] = cn;
-    if (!node_exists) {
+    if (!nodes_exist) {
         // update graph nodes
         for (auto&& n : cn)
             if (auto&& key = n.first; !g.contains(key)) g[key] = _CN();
@@ -381,9 +635,9 @@ void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const _CN& cn, bool node_exists)
 }
 
 template <typename EdgeT, IDVT IDT>
-void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const std::map<IDT, EdgeT>& map, bool node_exists)
+void DGraphBase<EdgeT, IDT>::insertNode(IDT id, const std::map<IDT, EdgeT>& map, bool nodes_exist)
     requires EdgeVT<EdgeT> {
-    insertNode(id, _protected::mapAsEdgeMap(map), node_exists);
+    insertNode(id, _protected::mapAsEdgeMap(map), nodes_exist);
 }
 
 template <typename EdgeT, IDVT IDT>
