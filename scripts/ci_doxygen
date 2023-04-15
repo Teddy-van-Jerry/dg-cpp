@@ -11,6 +11,9 @@ cd doxygen-1.9.4
 sudo make install
 cd ..
 
+## Install Graphviz
+sudo apt install -y graphviz
+
 # Run Doxygen
 cd dg-cpp && doxygen ./docs/Doxyfile
 

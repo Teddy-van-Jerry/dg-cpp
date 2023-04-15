@@ -1,3 +1,14 @@
+/**
+ * @file base.hpp
+ * @author Wuqiong Zhao (me@wqzhao.org)
+ * @brief Directed Graph Base Class
+ * @version 0.1.0
+ * @date 2023-04-15
+ *
+ * @copyright Copyright (c) 2023 Wuqiong Zhao (Teddy van Jerry)
+ *
+ */
+
 #ifndef _DG_BASE_HPP_
 #define _DG_BASE_HPP_
 
@@ -22,48 +33,170 @@
  * @endcode
  */
 namespace dg {
+/**
+ * @brief Directed graph base class.
+ *
+ * @details If the edge only represents connection, the EdgeT can be void.
+ * @tparam EdgeT Type of edge.
+ * @tparam IDT Type of ID.
+ */
 template <typename EdgeT = void, IDVT IDT = std::string>
 class DGraphBase {
   protected:
     using _ET = Edge<EdgeT>;        /**< edge type */
     using _CN = std::map<IDT, _ET>; /**< connection */
+
+    /**
+     * @brief Edge type that avoids void.
+     *
+     * @details Since some operations do not allow void, so we change the void type to a non-void type,
+     *          while retaining other types as the same.
+     * @tparam T Same as EdgeT. Do not specify this type yourself.
+     */
     template <typename T = EdgeT>
     using EdgeT__ = typename std::conditional<std::is_void_v<T>, int, T>::type;
+
+    /**
+     * @brief Reference to edge type that avoids void.
+     *
+     * @details Since some operations do not allow void&, so we change the void type to non-void type,
+     *          while retaining other types as the same reference.
+     * @tparam T Same as EdgeT. Do not specify this type yourself.
+     */
     template <typename T = EdgeT>
     using EdgeT_R_ = typename std::conditional<std::is_void_v<T>, int, T>::type&;
+
+    /**
+     * @brief Const reference to edge type that avoids void.
+     *
+     * @details Since some operations do not allow const void&, so we change the void type to non-void type,
+     *          while retaining other types as the same const reference.
+     * @tparam T Same as EdgeT. Do not specify this type yourself.
+     */
     template <typename T = EdgeT>
     using EdgeT_CR_ = const typename std::conditional<std::is_void_v<T>, int, T>::type&;
-    using EdgeT_    = EdgeT__<>;
-    using EdgeT_R   = EdgeT_R_<>;
-    using EdgeT_CR  = EdgeT_CR_<>;
+
+    using EdgeT_   = EdgeT__<>;   /**< safe edge type */
+    using EdgeT_R  = EdgeT_R_<>;  /**< safe edge reference type */
+    using EdgeT_CR = EdgeT_CR_<>; /**< safe edge const reference type */
 
   public:
+    /**
+     * @brief Construct a new DGraphBase object.
+     *
+     * This is the default constructor.
+     */
     DGraphBase() = default;
 
+    /**
+     * @brief Check if the graph has a node with id.
+     *
+     * @param id The node id (which should be unique).
+     * @retval true There exists the node in the graph.
+     * @retval false There does not exist the node in the graph.
+     */
     bool hasNode(IDT id) const noexcept;
 
+    /**
+     * @brief Check if the graph has an edge linking from_id and to_id.
+     *
+     * @details If either from_id or to_id node does not exist, we conclude there is no such edge.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @retval true There exists the edge in the graph.
+     * @retval false There does not exist the edge in the graph.
+     */
     bool hasEdge(IDT from_id, IDT to_id) const noexcept;
 
+    /**
+     * @brief The total number of nodes in the graph.
+     *
+     * @return (size_t) The number of nodes.
+     */
     size_t numNodes() const noexcept;
 
+    /**
+     * @brief The total number of edges in the graph.
+     *
+     * @return (size_t) The number of edges.
+     */
     size_t numEdges() const noexcept;
 
+    /**
+     * @brief Get the edge data between two nodes.
+     *
+     * @note The EdgeT should not be void.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @return (EdgeT) The edge data.
+     */
     EdgeT edge(IDT from_id, IDT to_id) const
         requires EdgeVT<EdgeT>;
 
+    /**
+     * @brief Get the edge data reference between two nodes.
+     *
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @return (EdgeT_R) The edge data reference.
+     */
     EdgeT_R edge(IDT from_id, IDT to_id)
         requires EdgeVT<EdgeT>;
 
-    // primarily for lambda expression
+    /**
+     * @brief Get the edge data after processing with a Lambda expression.
+     *
+     * @details You can also use the `std::function` version instead of the Lambda expression.\n
+     *          You need to manually set the return type as the function template argument, for example
+     * @code {.cpp}
+     * // dgb1 is of type DGraphBase<int, std::string>.
+     * int result = dgb1.edge<int>(std::string("n1"), std::string("n2"), [](int weight) {
+     *     return weight + 1;
+     * });
+     * @endcode
+     *
+     * @note The EdgeT should not be void.
+     * @tparam Ret The return type of the Lambda expression as well as this function.
+     * @tparam Fn The Lambda expression type.
+     * @tparam Args The argument types of the Lambda expression.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @param func The Lambda expression.
+     * @param args The arguments of the Lambda expression.
+     * @return (Ret) The result of the Lambda expression.
+     */
     template <typename Ret, NonFunc Fn, typename... Args>
     Ret edge(IDT from_id, IDT to_id, Fn func, Args... args) const
         requires EdgeVT<EdgeT>;
 
+    /**
+     * @brief Get the edge data after processing with a `std::function`.
+     *
+     * @details You have to specifically define the `std::function`, for example
+     * @code {.cpp}
+     * // dgb1 is of type DGraphBase<int, std::string>.
+     * int result = dgb1.edge(std::string("n1"), std::string("n2"),
+     *                        std::function<int(int, int)>([](int weight, int n) { return weight + n; }), 2);
+     * @endcode
+     * You can also use the Lambda version of the `edge` method instead of the `std::function` version.
+     *
+     * @note The EdgeT should not be void.
+     * @tparam Ret The return type of the `std::function`.
+     * @tparam Args The argument types of the `std::function`.
+     * @param from_id The from node id.
+     * @param to_id The to node id.
+     * @param func The `std::function`.
+     * @param args The arguments of the `std::function`.
+     * @return (Ret) The result of the `std::function`.
+     */
     template <typename Ret, typename... Args>
     Ret edge(IDT from_id, IDT to_id, std::function<Ret(EdgeT_, Args...)> func, Args... args) const
         requires EdgeVT<EdgeT>;
 
     std::vector<IDT> nodesID() const;
+
+    // get all edges
+    std::vector<std::pair<IDT, IDT>> edges() const;
 
     void insertNode(IDT id);
 
@@ -124,6 +257,8 @@ class DGraphBase {
 
   public:
     void insertSubGraph(const DGraphBase<EdgeT, IDT>& dg);
+
+    void insertSubGraph(const DGraphBase<EdgeT, IDT>& dg, IDT id);
 
     void merge(const DGraphBase<EdgeT, IDT>& dg);
 
@@ -219,6 +354,15 @@ std::vector<IDT> DGraphBase<EdgeT, IDT>::nodesID() const {
     std::vector<IDT> keys;
     std::transform(g.begin(), g.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
     return keys;
+}
+
+template <typename EdgeT, IDVT IDT>
+inline std::vector<std::pair<IDT, IDT>> DGraphBase<EdgeT, IDT>::edges() const {
+    std::vector<std::pair<IDT, IDT>> e;
+    for (auto&& [from_id, cn] : g) {
+        for (auto&& edge : cn) e.push_back({ from_id, edge.second });
+    }
+    return e;
 }
 
 template <typename EdgeT, IDVT IDT>
@@ -417,6 +561,12 @@ DGraphBase<EdgeT, IDT>::minOrMaxWeightPath(bool min, IDT from_id, IDT to_id, std
 
 template <typename EdgeT, IDVT IDT>
 inline void DGraphBase<EdgeT, IDT>::insertSubGraph(const DGraphBase<EdgeT, IDT>& dg) {
+    merge(dg);
+}
+
+template <typename EdgeT, IDVT IDT>
+inline void DGraphBase<EdgeT, IDT>::insertSubGraph(const DGraphBase<EdgeT, IDT>& dg, IDT id) {
+    removeNode(id);
     merge(dg);
 }
 
