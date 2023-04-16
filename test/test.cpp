@@ -1,3 +1,14 @@
+/**
+ * @file test.cpp
+ * @author Wuqiong Zhao (me@wqzhao.org)
+ * @brief Example use of dg library.
+ * @version 0.1.0
+ * @date 2023-04-16
+ *
+ * @copyright Copyright (c) 2023 Wuqiong Zhao (Teddy van Jerry)
+ *
+ */
+
 #include <dg.hpp>
 #include <iostream>
 using namespace dg;
@@ -94,6 +105,16 @@ int main(int argc, char* argv[]) {
     std::cout << "min weight: " << w2 << std::endl;
     std::cout << "path: ";
     printVec(n2, " -> ");
+
+    std::cout << ">> dg3:" << std::endl;
+    DGraph<double, int> dg3;
+    dg3.insertNode("A", 0.8);
+    dg3.insertEdge("A", "B", 1);
+    std::cout << dg3.numNodes() << " " << dg3.numEdges() << std::endl;
+    std::cout << std::boolalpha << dg3.strictCheck() << std::endl;
+    dg3.insertNode("B", 1.2);
+    std::cout << dg3.numNodes() << " " << dg3.numEdges() << std::endl;
+    std::cout << std::boolalpha << dg3.strictCheck() << std::endl;
 
     return 0;
 }

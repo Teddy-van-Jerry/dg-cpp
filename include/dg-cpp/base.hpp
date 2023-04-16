@@ -3,7 +3,7 @@
  * @author Wuqiong Zhao (me@wqzhao.org)
  * @brief Directed Graph Base Class
  * @version 0.1.0
- * @date 2023-04-15
+ * @date 2023-04-16
  *
  * @copyright Copyright (c) 2023 Wuqiong Zhao (Teddy van Jerry)
  *
@@ -123,6 +123,14 @@ class DGraphBase {
     size_t numEdges() const noexcept;
 
     /**
+     * @brief The total number of nodes in the graph.
+     *
+     * @details This is the alias for numNodes().
+     * @return (size_t) The number of edges.
+     */
+    size_t size() const noexcept;
+
+    /**
      * @brief Get the edge data between two nodes.
      *
      * @note The EdgeT should not be void.
@@ -194,6 +202,16 @@ class DGraphBase {
         requires EdgeVT<EdgeT>;
 
     /**
+     * @brief Check if the graph is strictly valid.
+     *
+     * @details A graph is strictly valid if:
+     *            1. All nodes set by the edges are in the graph.
+     * @retval true
+     * @retval false
+     */
+    bool strictCheck() const;
+
+    /**
      * @brief Get all nodes IS in the graph.
      *
      * @return (std::vector<IDT>) A vector of nodes ID.
@@ -263,6 +281,12 @@ class DGraphBase {
      * @param keep_edge Whether keeps the connected edges after removing the node (default as false).
      */
     void removeNodeIfExists(IDT id, bool keep_edge = false);
+
+    void insertEdgeToExists(IDT from_id, IDT to_id)
+        requires std::is_void_v<EdgeT>;
+
+    void insertEdgeToExists(IDT from_id, IDT to_id, EdgeT_CR data)
+        requires EdgeVT<EdgeT>;
 
     /**
      * @brief Insert an edge to the graph without data.
@@ -535,6 +559,21 @@ class DGraphBase {
      */
     size_t removeNodeConnectedEdges(IDT id);
 
+  protected:
+    /**
+     * @brief Return the const reference to the graph map.
+     *
+     * @return (const std::map<IDT, _CN>&) Const reference to the graph map.
+     */
+    const std::map<IDT, _CN>& graph() const;
+
+    /**
+     * @brief Return the reference to the graph map.
+     *
+     * @return (std::map<IDT, _CN>&) reference to the graph map.
+     */
+    std::map<IDT, _CN>& graph();
+
   private:
     std::map<IDT, _CN> g; /**< the main graph */
 };
@@ -560,6 +599,11 @@ inline size_t DGraphBase<EdgeT, IDT>::numEdges() const noexcept {
     size_t s = 0;
     for (auto&& cn : g) s += cn.second.size();
     return s;
+}
+
+template <typename EdgeT, IDVT IDT>
+inline size_t DGraphBase<EdgeT, IDT>::size() const noexcept {
+    return numNodes();
 }
 
 template <typename EdgeT, IDVT IDT>
@@ -601,6 +645,17 @@ inline Ret DGraphBase<EdgeT, IDT>::edge(IDT from_id, IDT to_id, std::function<Re
                                         Args... args) const
     requires EdgeVT<EdgeT> {
     return func(edge(from_id, to_id), args...);
+}
+
+template <typename EdgeT, IDVT IDT>
+inline bool DGraphBase<EdgeT, IDT>::strictCheck() const {
+    auto nodes = nodesID();
+    std::vector<IDT> cn_nodes;
+    for (auto&& cn : g)
+        for (auto&& n : cn.second) cn_nodes.push_back(n.first);
+    std::sort(cn_nodes.begin(), cn_nodes.end());
+    cn_nodes.erase(std::unique(cn_nodes.begin(), cn_nodes.end()), cn_nodes.end());
+    return std::includes(nodes.begin(), nodes.end(), cn_nodes.begin(), cn_nodes.end());
 }
 
 template <typename EdgeT, IDVT IDT>
@@ -653,9 +708,21 @@ void DGraphBase<EdgeT, IDT>::removeNodeIfExists(IDT id, bool keep_edge) {
 }
 
 template <typename EdgeT, IDVT IDT>
-void DGraphBase<EdgeT, IDT>::insertEdge(IDT from_id, IDT to_id, bool to_exists)
+inline void DGraphBase<EdgeT, IDT>::insertEdgeToExists(IDT from_id, IDT to_id)
     requires std::is_void_v<EdgeT> {
     g[from_id][to_id] = Edge<void>();
+}
+
+template <typename EdgeT, IDVT IDT>
+inline void DGraphBase<EdgeT, IDT>::insertEdgeToExists(IDT from_id, IDT to_id, EdgeT_CR data)
+    requires EdgeVT<EdgeT> {
+    g[from_id][to_id] = data;
+}
+
+template <typename EdgeT, IDVT IDT>
+void DGraphBase<EdgeT, IDT>::insertEdge(IDT from_id, IDT to_id, bool to_exists)
+    requires std::is_void_v<EdgeT> {
+    insertEdgeToExists(from_id, to_id);
     if (!to_exists && !g.contains(to_id)) g[to_id] = _CN();
 }
 
@@ -663,7 +730,7 @@ template <typename EdgeT, IDVT IDT>
 void DGraphBase<EdgeT, IDT>::insertEdge(IDT from_id, IDT to_id, typename DGraphBase<EdgeT, IDT>::EdgeT_CR data,
                                         bool to_exists)
     requires EdgeVT<EdgeT> {
-    g[from_id][to_id] = data;
+    insertEdgeToExists(from_id, to_id, data);
     if (!to_exists && !g.contains(to_id)) g[to_id] = _CN();
 }
 
@@ -875,6 +942,16 @@ size_t DGraphBase<EdgeT, IDT>::removeNodeConnectedEdges(IDT id) {
     size_t s = 0;
     for (auto&& cn : g) s += cn.second.erase(id);
     return s;
+}
+
+template <typename EdgeT, IDVT IDT>
+inline const std::map<IDT, typename DGraphBase<EdgeT, IDT>::_CN>& DGraphBase<EdgeT, IDT>::graph() const {
+    return g;
+}
+
+template <typename EdgeT, IDVT IDT>
+inline std::map<IDT, typename DGraphBase<EdgeT, IDT>::_CN>& DGraphBase<EdgeT, IDT>::graph() {
+    return g;
 }
 
 } // namespace dg
