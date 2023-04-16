@@ -115,6 +115,9 @@ int main(int argc, char* argv[]) {
     dg3.insertNode("B", 1.2);
     std::cout << dg3.numNodes() << " " << dg3.numEdges() << std::endl;
     std::cout << std::boolalpha << dg3.strictCheck() << std::endl;
+    dg3.removeNode("A");
+    std::cout << dg3.numNodes() << " " << dg3.numEdges() << std::endl;
+    std::cout << std::boolalpha << dg3.strictCheck() << std::endl;
 
     return 0;
 }

@@ -42,6 +42,8 @@ class DGraph : public DGraphBase<EdgeT, IDT> {
 
     void insertNode(IDT id, const NodeT& data, const _CN& cn);
 
+    void removeNode(IDT id, bool keep_edge = false);
+
     void insertEdge(IDT from_id, IDT to_id, [[maybe_unused]] bool to_exists = true)
         requires std::is_void_v<EdgeT>;
 
@@ -82,14 +84,20 @@ inline bool DGraph<NodeT, EdgeT, IDT>::strictCheck() const {
 
 template <typename NodeT, typename EdgeT, typename IDT>
 inline void DGraph<NodeT, EdgeT, IDT>::insertNode(IDT id, const NodeT& data) {
-    this->insertNode(id);
+    this->DGraphBase<EdgeT, IDT>::insertNode(id);
     node_data[id] = data;
 }
 
 template <typename NodeT, typename EdgeT, typename IDT>
 inline void DGraph<NodeT, EdgeT, IDT>::insertNode(IDT id, const NodeT& data, const _CN& cn) {
-    this->insertNode(id, cn);
+    this->DGraphBase<EdgeT, IDT>::insertNode(id, cn);
     node_data[id] = data;
+}
+
+template <typename NodeT, typename EdgeT, typename IDT>
+inline void DGraph<NodeT, EdgeT, IDT>::removeNode(IDT id, bool keep_edge) {
+    this->DGraphBase<EdgeT, IDT>::removeNode(id);
+    node_data.erase(id);
 }
 
 template <typename NodeT, typename EdgeT, typename IDT>
