@@ -37,5 +37,6 @@ install(
 
 if (DG_CPP_TESTS)
     message("Build DG CPP Tests")
-    add_subdirectory(${CMAKE_SOURCE_DIR}/test ${CMAKE_SOURCE_DIR}/bin)
+    enable_testing()
+    add_subdirectory(${CMAKE_SOURCE_DIR}/tests ${CMAKE_SOURCE_DIR}/bin)
 endif()
